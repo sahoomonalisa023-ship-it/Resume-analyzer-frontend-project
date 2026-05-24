@@ -1,22 +1,83 @@
 @import "tailwindcss";
 
+/* BASE */
+html,
 body {
   margin: 0;
   padding: 0;
   font-family: Inter, sans-serif;
   background: #020617;
   color: white;
+  min-height: 100vh;
 }
 
+/* Smooth UI */
 * {
+  box-sizing: border-box;
+}
+
+/* Background like your original (dark gradient feel) */
+body {
+  background: linear-gradient(135deg, #020617, #0f172a, #000000);
+}
+
+/* BUTTONS (restore original nice feel) */
+button {
+  cursor: pointer;
   transition: all 0.3s ease;
 }
 
+button:hover {
+  transform: scale(1.03);
+}
+
+/* INPUTS (restore original glass look) */
+input,
+textarea {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: white;
+  border-radius: 16px;
+  padding: 14px;
+  outline: none;
+}
+
+input:focus,
+textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+/* TOGGLE BUTTON FEEL (important for Job Description / Link buttons) */
+button[type="button"] {
+  backdrop-filter: blur(10px);
+}
+
+/* FILE INPUT */
+input[type="file"] {
+  color: #cbd5e1;
+}
+
+/* SCROLLBAR (premium original style) */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
+::-webkit-scrollbar-track {
+  background: #0b1220;
+}
+
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #3b82f6;
   border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+/* TEXT SELECTION */
+::selection {
+  background: #3b82f6;
+  color: white;
 }

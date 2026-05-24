@@ -1,210 +1,173 @@
-import { useState } from "react";
-import axios from "axios";
-
-import { motion } from "framer-motion";
-
-import {
-  FaFileUpload,
-  FaCopy,
-  FaCheckCircle,
-  FaBrain,
-  FaLink,
-  FaFileAlt,
-} from "react-icons/fa";
-
+import React, { useState } from "react";
+import { FaFileAlt, FaLink, FaCloudUploadAlt } from "react-icons/fa";
 import Navbar from "../components/Navbar";
-import Loader from "../components/Loader";
 import ScoreCard from "../components/ScoreCard";
 import SkillTag from "../components/SkillTag";
 
-function Analyzer() {
+export default function Analyzer() {
   const [file, setFile] = useState(null);
+  const [inputType, setInputType] = useState("text");
   const [jobDescription, setJobDescription] = useState("");
   const [jobLink, setJobLink] = useState("");
-  const [inputType, setInputType] = useState("text");
-  const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
 
-  // ✅ FIXED BACKEND URL
   const API_URL = "https://resume-analyzer-backend-project.onrender.com";
 
-  const handleSubmit = async (e) => {
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const handleAnalyze = async (e) => {
     e.preventDefault();
 
     if (!file) {
-      alert("Please Upload Resume PDF");
+      setError("Please upload your resume PDF first.");
       return;
     }
 
-    if (inputType === "text" && !jobDescription) {
-      alert("Paste Job Description");
-      return;
-    }
-
-    if (inputType === "link" && !jobLink) {
-      alert("Paste Job Link");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("resume", file);
-    formData.append("job_description", jobDescription);
-    formData.append("job_link", jobLink);
+    setLoading(true);
+    setError(null);
+    setResult(null);
 
     try {
-      setLoading(true);
+      const formData = new FormData();
+      formData.append("resume", file);
+      formData.append("job_description", jobDescription);
+      formData.append("job_link", jobLink);
 
-      const res = await axios.post(`${API_URL}/analyze`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      const res = await fetch(`${API_URL}/analyze`, {
+        method: "POST",
+        body: formData,
       });
 
-      setResult(res.data);
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Backend error");
+      }
+
+      setResult(data);
     } catch (err) {
-      console.log(err);
-      alert("Backend Error");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const copyResult = () => {
-    if (!result) return;
-
-    const text = `
-ATS Score: ${result.match_score}%
-
-Skill Score: ${result.skill_score}%
-
-Text Score: ${result.text_score}%
-
-Resume Skills:
-${result.resume_skills.join(", ")}
-
-Missing Skills:
-${result.missing_skills.join(", ")}
-`;
-
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-black text-white overflow-hidden">
+    <div className="min-h-screen">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-5 py-10 md:py-16">
-        {/* HERO */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="text-center mb-14"
-        >
-          <div className="flex justify-center mb-6">
-            <div className="bg-blue-500/20 p-5 rounded-full border border-blue-500">
-              <FaBrain className="text-5xl text-blue-400" />
-            </div>
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-extrabold">
-            AI Resume <span className="text-blue-400">Analyzer</span>
+      <div className="max-w-4xl mx-auto px-4 py-10">
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
+          <h1 className="text-3xl font-bold text-center text-blue-400">
+            Upload Resume PDF
           </h1>
 
-          <p className="text-gray-400 mt-6 text-lg max-w-3xl mx-auto">
-            Upload your resume and compare it with job description using AI ATS
-            analysis.
-          </p>
-        </motion.div>
+          <form onSubmit={handleAnalyze} className="space-y-6">
+            {/* FILE UPLOAD */}
+            <div className="border-2 border-dashed border-white/20 rounded-2xl p-8 text-center relative">
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileChange}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
 
-        {/* FORM */}
-        <motion.form
-          onSubmit={handleSubmit}
-          className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-[35px] p-8 space-y-8"
-        >
-          {/* FILE */}
-          <div>
-            <label className="block mb-4 text-2xl font-bold text-blue-300">
-              Upload Resume PDF
-            </label>
+              <FaCloudUploadAlt className="text-5xl text-blue-400 mx-auto" />
 
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={(e) => setFile(e.target.files[0])}
-            />
+              <p className="mt-4 text-gray-300">
+                {file ? file.name : "Click to upload your resume PDF"}
+              </p>
+            </div>
 
-            {file && <p className="mt-3 text-green-400">{file.name}</p>}
-          </div>
+            {/* TOGGLE */}
+            <div className="flex gap-4 justify-center">
+              <button
+                type="button"
+                onClick={() => setInputType("text")}
+                className={`px-6 py-3 rounded-xl font-semibold ${
+                  inputType === "text"
+                    ? "bg-blue-500 text-white"
+                    : "bg-white/10 text-gray-300"
+                }`}
+              >
+                <FaFileAlt /> Job Description
+              </button>
 
-          {/* TOGGLE */}
-          <div className="flex gap-4">
-            <button type="button" onClick={() => setInputType("text")}>
-              Job Description
+              <button
+                type="button"
+                onClick={() => setInputType("link")}
+                className={`px-6 py-3 rounded-xl font-semibold ${
+                  inputType === "link"
+                    ? "bg-green-500 text-white"
+                    : "bg-white/10 text-gray-300"
+                }`}
+              >
+                <FaLink /> Job Link
+              </button>
+            </div>
+
+            {/* INPUT */}
+            {inputType === "text" ? (
+              <textarea
+                rows="5"
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                placeholder="Paste Job Description"
+                className="w-full p-4 bg-black/40 rounded-xl"
+              />
+            ) : (
+              <input
+                type="text"
+                value={jobLink}
+                onChange={(e) => setJobLink(e.target.value)}
+                placeholder="Paste Job Link"
+                className="w-full p-4 bg-black/40 rounded-xl"
+              />
+            )}
+
+            {/* BUTTON */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 py-4 rounded-xl font-bold text-white"
+            >
+              {loading ? "Analyzing..." : "Analyze Resume"}
             </button>
+          </form>
 
-            <button type="button" onClick={() => setInputType("link")}>
-              Job Link
-            </button>
-          </div>
+          {/* ERROR */}
+          {error && <p className="text-red-400 text-center">{error}</p>}
 
-          {/* INPUT */}
-          {inputType === "text" ? (
-            <textarea
-              rows="8"
-              value={jobDescription}
-              onChange={(e) => setJobDescription(e.target.value)}
-              placeholder="Paste Job Description"
-              className="w-full p-4 bg-black/40"
-            />
-          ) : (
-            <input
-              type="text"
-              value={jobLink}
-              onChange={(e) => setJobLink(e.target.value)}
-              placeholder="Paste Job Link"
-              className="w-full p-4 bg-black/40"
-            />
+          {/* RESULT */}
+          {result && (
+            <div className="mt-8 grid md:grid-cols-2 gap-6">
+              <ScoreCard score={result.match_score || result.ats_score} />
+
+              <div className="bg-white/5 p-6 rounded-2xl">
+                <h2 className="text-xl font-bold mb-3 text-green-400">
+                  Matched Skills
+                </h2>
+
+                <div className="flex flex-wrap gap-2">
+                  {(result.resume_skills || result.matched_skills || []).map(
+                    (skill, i) => (
+                      <SkillTag key={i} skill={skill} />
+                    ),
+                  )}
+                </div>
+
+                <p className="mt-4 text-gray-400 text-sm">
+                  {result.message || ""}
+                </p>
+              </div>
+            </div>
           )}
-
-          {/* SUBMIT */}
-          <button type="submit" className="w-full bg-blue-500 py-4 rounded-2xl">
-            Analyze Resume
-          </button>
-        </motion.form>
-
-        {loading && <Loader />}
-
-        {/* RESULT */}
-        {result && (
-          <div className="mt-10">
-            <ScoreCard score={result.match_score} />
-
-            <h2>Skill Score: {result.skill_score}%</h2>
-            <h2>Text Score: {result.text_score}%</h2>
-
-            <h3>Resume Skills</h3>
-            {result.resume_skills.map((s, i) => (
-              <SkillTag key={i} skill={s} />
-            ))}
-
-            <h3>Missing Skills</h3>
-            {result.missing_skills.map((s, i) => (
-              <span key={i}>{s}</span>
-            ))}
-
-            <button onClick={copyResult}>
-              {copied ? "Copied" : "Copy Result"}
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
 }
-
-export default Analyzer;
