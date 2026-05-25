@@ -1,16 +1,27 @@
 import React, { useState } from "react";
 import { FaFileAlt, FaLink, FaCloudUploadAlt } from "react-icons/fa";
+
 import Navbar from "../components/Navbar";
 import ScoreCard from "../components/ScoreCard";
 import SkillTag from "../components/SkillTag";
 
 export default function Analyzer() {
   const [file, setFile] = useState(null);
+
   const [inputType, setInputType] = useState("text");
+
   const [jobDescription, setJobDescription] = useState("");
+
   const [jobLink, setJobLink] = useState("");
+
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+
+  const [result, setResult] = useState(() => {
+    const saved = localStorage.getItem("ats_result");
+
+    return saved ? JSON.parse(saved) : null;
+  });
+
   const [error, setError] = useState(null);
 
   const API_URL = "https://resume-analyzer-backend-project.onrender.com";
@@ -19,22 +30,32 @@ export default function Analyzer() {
     setFile(e.target.files[0]);
   };
 
+  const clearResult = () => {
+    localStorage.removeItem("ats_result");
+
+    setResult(null);
+  };
+
   const handleAnalyze = async (e) => {
     e.preventDefault();
 
     if (!file) {
       setError("Please upload your resume PDF first.");
+
       return;
     }
 
     setLoading(true);
+
     setError(null);
-    setResult(null);
 
     try {
       const formData = new FormData();
+
       formData.append("resume", file);
+
       formData.append("job_description", jobDescription);
+
       formData.append("job_link", jobLink);
 
       const res = await fetch(`${API_URL}/analyze`, {
@@ -49,6 +70,8 @@ export default function Analyzer() {
       }
 
       setResult(data);
+
+      localStorage.setItem("ats_result", JSON.stringify(data));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -57,7 +80,7 @@ export default function Analyzer() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-black text-white">
       <Navbar />
 
       <div className="max-w-4xl mx-auto px-4 py-10">
@@ -68,6 +91,7 @@ export default function Analyzer() {
 
           <form onSubmit={handleAnalyze} className="space-y-6">
             {/* FILE UPLOAD */}
+
             <div className="border-2 border-dashed border-white/20 rounded-2xl p-8 text-center relative">
               <input
                 type="file"
@@ -84,6 +108,7 @@ export default function Analyzer() {
             </div>
 
             {/* TOGGLE */}
+
             <div className="flex gap-4 justify-center">
               <button
                 type="button"
@@ -111,6 +136,7 @@ export default function Analyzer() {
             </div>
 
             {/* INPUT */}
+
             {inputType === "text" ? (
               <textarea
                 rows="5"
@@ -130,6 +156,7 @@ export default function Analyzer() {
             )}
 
             {/* BUTTON */}
+
             <button
               type="submit"
               disabled={loading}
@@ -140,29 +167,42 @@ export default function Analyzer() {
           </form>
 
           {/* ERROR */}
+
           {error && <p className="text-red-400 text-center">{error}</p>}
 
           {/* RESULT */}
+
           {result && (
             <div className="mt-8 grid md:grid-cols-2 gap-6">
-              <ScoreCard score={result.match_score || result.ats_score} />
+              <ScoreCard score={result.match_score || 0} />
 
               <div className="bg-white/5 p-6 rounded-2xl">
                 <h2 className="text-xl font-bold mb-3 text-green-400">
-                  Matched Skills
+                  Resume Skills
                 </h2>
 
                 <div className="flex flex-wrap gap-2">
-                  {(result.resume_skills || result.matched_skills || []).map(
-                    (skill, i) => (
-                      <SkillTag key={i} skill={skill} />
-                    ),
-                  )}
+                  {(result.resume_skills || []).map((skill, i) => (
+                    <SkillTag key={i} skill={skill} />
+                  ))}
                 </div>
 
-                <p className="mt-4 text-gray-400 text-sm">
-                  {result.message || ""}
-                </p>
+                <h2 className="text-xl font-bold mt-6 mb-3 text-red-400">
+                  Missing Skills
+                </h2>
+
+                <div className="flex flex-wrap gap-2">
+                  {(result.missing_skills || []).map((skill, i) => (
+                    <SkillTag key={i} skill={skill} />
+                  ))}
+                </div>
+
+                <button
+                  onClick={clearResult}
+                  className="mt-6 bg-red-500 px-4 py-2 rounded-xl"
+                >
+                  Clear Result
+                </button>
               </div>
             </div>
           )}
